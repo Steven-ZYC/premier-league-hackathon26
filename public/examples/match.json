@@ -1,0 +1,20 @@
+{
+  "id": "example-import",
+  "title": "我的赛后复盘",
+  "competition": "自定义赛事",
+  "date": "2026-10-18",
+  "home": {"name": "主队", "short": "HOME", "color": "#8b5cf6"},
+  "away": {"name": "客队", "short": "AWAY", "color": "#eab308"},
+  "coverage": "excerpt",
+  "source": "个人整理；本示例为虚构数据",
+  "rawInput": "12′ 主队进球。\n38′ 客队进球。\n67′ 主队射正，被门将扑出。\n90+3′ 全场结束。",
+  "events": [
+    {"id":"e1","period":1,"displayTime":"12","order":0,"team":"home","player":"","type":"goal","rawText":"12′ 主队进球。","confirmed":true},
+    {"id":"e2","period":1,"displayTime":"38","order":1,"team":"away","player":"","type":"goal","rawText":"38′ 客队进球。","confirmed":true},
+    {"id":"e3","period":2,"displayTime":"67","order":2,"team":"home","player":"","type":"shot_on_target","rawText":"67′ 主队射正，被门将扑出。","confirmed":true},
+    {"id":"e4","period":2,"displayTime":"90+3","order":3,"team":"unknown","player":"","type":"fulltime","rawText":"90+3′ 全场结束。","confirmed":true}
+  ],
+  "finalStats": {"home":{"goals":1,"passes":400,"successfulPasses":344},"away":{"goals":1,"passes":350,"successfulPasses":287}},
+  "snapshots": [{"cursor":2,"home":{"goals":1,"passes":300,"successfulPasses":258},"away":{"goals":1,"passes":250,"successfulPasses":205}}],
+  "duration":93
+}

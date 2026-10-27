@@ -1,0 +1,7 @@
+{
+  "name": "pitchpulse-api", "version": "1.0.0", "private": true,
+  "main": "dist/functions.cjs", "engines": {"node": ">=22.12.0"},
+  "scripts": {"build": "esbuild src/functions.ts --bundle --platform=node --target=node22 --format=cjs --external:@azure/functions --outfile=dist/functions.cjs", "start": "func start"},
+  "dependencies": {"@azure/functions": "^4.7.0"},
+  "devDependencies": {"esbuild": "^0.25.0"}
+}

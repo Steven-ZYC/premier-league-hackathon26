@@ -1,0 +1,291 @@
+import type { Match, Team } from "./types";
+import { parseText, versionMatch } from "./parser";
+
+const united: Team = {
+  name: "曼联",
+  englishName: "Manchester United",
+  short: "MUN",
+  color: "#ef4444",
+  badge: "https://resources.premierleague.com/premierleague/badges/t1.svg",
+};
+const spurs: Team = {
+  name: "热刺",
+  englishName: "Tottenham Hotspur",
+  short: "TOT",
+  color: "#dbeafe",
+  badge: "https://resources.premierleague.com/premierleague/badges/t6.svg",
+};
+const chelsea: Team = {
+  name: "切尔西",
+  englishName: "Chelsea",
+  short: "CHE",
+  color: "#3b82f6",
+  badge: "https://resources.premierleague.com/premierleague/badges/t8.svg",
+};
+const barca: Team = {
+  name: "巴塞罗那",
+  englishName: "FC Barcelona",
+  short: "BAR",
+  color: "#a855f7",
+};
+const athletic: Team = {
+  name: "毕尔巴鄂",
+  englishName: "Athletic Club",
+  short: "ATH",
+  color: "#ef4444",
+};
+
+function demo(
+  id: string,
+  title: string,
+  competition: string,
+  date: string,
+  home: Team,
+  away: Team,
+  lines: string[],
+): Match {
+  const rawInput = lines.join("\n");
+  const events = parseText(rawInput, home.name, away.name);
+  const match: Match = {
+    id,
+    title,
+    competition,
+    date,
+    home,
+    away,
+    events,
+    coverage: "complete",
+    source: "PitchPulse 产品演示 · 所有赛况均为虚构，不对应真实比赛",
+    rawInput,
+    demo: true,
+    version: "",
+    duration: Math.max(90, events.at(-1)!.activeMinute),
+  };
+  match.version = versionMatch(match);
+  return match;
+}
+
+const match1 = demo(
+  "demo-01",
+  "演示比赛 01",
+  "英超",
+  "2026-10-18",
+  united,
+  spurs,
+  [
+    "0′ 比赛开球。",
+    "3′ 曼联获得一次角球。",
+    "5′ 热刺完成一次射门，皮球偏出球门。",
+    "8′ 曼联完成一次射门，被门将扑出。",
+    "10′ 曼联获得一次角球。",
+    "12′ 曼联的拉什福德进球，主队取得领先。",
+    "16′ 热刺发生一次犯规。",
+    "19′ 热刺获得一次角球。",
+    "22′ 热刺射正，被门将扑出。",
+    "26′ 曼联发生一次犯规。",
+    "29′ 热刺的防守球员领到黄牌。",
+    "33′ 热刺获得一次角球。",
+    "36′ 热刺射正，被门将扑出。",
+    "38′ 热刺的孙兴慜进球，双方比分扳平。",
+    "42′ 曼联射门被防守球员封堵。",
+    "45+2′ 上半场结束。",
+    "46′ 下半场开球。",
+    "49′ 曼联获得一次角球。",
+    "52′ 曼联射正，被门将扑出。",
+    "56′ 曼联完成一次射门，皮球偏出球门。",
+    "58′ 曼联的B费进球，主队再次领先。",
+    "59′ 曼联获得一次角球。",
+    "63′ 曼联完成一次射门，皮球偏出球门。",
+    "67′ 曼联前锋在禁区内射门，被门将扑出。",
+    "71′ 热刺完成换人。",
+    "74′ 热刺射正，被门将扑出。",
+    "76′ 热刺的防守球员领到红牌，被罚下场。",
+    "80′ 曼联的防守球员领到黄牌。",
+    "84′ 热刺获得一次角球。",
+    "88′ 曼联射门被防守球员封堵。",
+    "90+3′ 比赛终场，全场结束。",
+  ],
+);
+match1.finalStats = {
+  home: {
+    goals: 2,
+    shots: 15,
+    shotsOnTarget: 7,
+    corners: 6,
+    fouls: 9,
+    yellowCards: 1,
+    redCards: 0,
+    passes: 486,
+    successfulPasses: 418,
+    possession: 56,
+  },
+  away: {
+    goals: 1,
+    shots: 11,
+    shotsOnTarget: 5,
+    corners: 5,
+    fouls: 12,
+    yellowCards: 1,
+    redCards: 1,
+    passes: 381,
+    successfulPasses: 312,
+    possession: 44,
+  },
+};
+match1.snapshots = [
+  {
+    cursor: match1.events.findIndex((e) => e.displayTime === "67"),
+    home: {
+      goals: 2,
+      shots: 12,
+      shotsOnTarget: 6,
+      corners: 5,
+      fouls: 5,
+      yellowCards: 0,
+      redCards: 0,
+      passes: 378,
+      successfulPasses: 325,
+      possession: 56,
+    },
+    away: {
+      goals: 1,
+      shots: 7,
+      shotsOnTarget: 4,
+      corners: 3,
+      fouls: 8,
+      yellowCards: 1,
+      redCards: 0,
+      passes: 311,
+      successfulPasses: 255,
+      possession: 44,
+    },
+  },
+];
+match1.version = versionMatch(match1);
+
+const match2 = demo(
+  "demo-02",
+  "演示比赛 02",
+  "英超",
+  "2026-10-11",
+  chelsea,
+  spurs,
+  [
+    "0′ 比赛开球。",
+    "4′ 切尔西获得一次角球。",
+    "7′ 热刺完成一次射门，皮球偏出球门。",
+    "10′ 切尔西射正，被门将扑出。",
+    "14′ 热刺发生一次犯规。",
+    "18′ 切尔西射门被防守球员封堵。",
+    "22′ 热刺获得一次角球。",
+    "25′ 切尔西获得一次角球。",
+    "28′ 切尔西的帕尔默进球，主队取得领先。",
+    "32′ 热刺射正，被门将扑出。",
+    "36′ 切尔西的防守球员领到黄牌。",
+    "41′ 热刺射门被防守球员封堵。",
+    "45+1′ 上半场结束。",
+    "46′ 下半场开球。",
+    "49′ 热刺获得一次角球。",
+    "53′ 切尔西发生一次犯规。",
+    "57′ 热刺射正，被门将扑出。",
+    "62′ 热刺的孙兴慜进球，比分扳平。",
+    "65′ 切尔西完成换人。",
+    "69′ 切尔西获得一次角球。",
+    "73′ 热刺完成一次射门，皮球偏出球门。",
+    "77′ 切尔西射正，被门将扑出。",
+    "81′ 热刺的防守球员领到红牌，被罚下场。",
+    "86′ 切尔西射门被防守球员封堵。",
+    "90+4′ 比赛终场，全场结束。",
+  ],
+);
+match2.finalStats = {
+  home: {
+    goals: 1,
+    shots: 14,
+    shotsOnTarget: 5,
+    corners: 6,
+    fouls: 11,
+    yellowCards: 2,
+    redCards: 0,
+    passes: 512,
+    successfulPasses: 451,
+    possession: 58,
+  },
+  away: {
+    goals: 1,
+    shots: 10,
+    shotsOnTarget: 4,
+    corners: 4,
+    fouls: 14,
+    yellowCards: 3,
+    redCards: 1,
+    passes: 368,
+    successfulPasses: 302,
+    possession: 42,
+  },
+};
+match2.version = versionMatch(match2);
+
+const match3 = demo(
+  "demo-03",
+  "演示比赛 03",
+  "西甲",
+  "2026-10-04",
+  barca,
+  athletic,
+  [
+    "0′ 比赛开球。",
+    "3′ 巴塞罗那获得一次角球。",
+    "7′ 毕尔巴鄂发生一次犯规。",
+    "11′ 巴塞罗那射正，被门将扑出。",
+    "15′ 巴塞罗那获得一次角球。",
+    "18′ 巴塞罗那的莱万多夫斯基进球，主队取得领先。",
+    "22′ 毕尔巴鄂完成一次射门，皮球偏出球门。",
+    "27′ 毕尔巴鄂获得一次角球。",
+    "31′ 巴塞罗那射门被防守球员封堵。",
+    "36′ 毕尔巴鄂的防守球员领到黄牌。",
+    "41′ 巴塞罗那的佩德里进球，主队扩大比分。",
+    "45+2′ 上半场结束。",
+    "46′ 下半场开球。",
+    "50′ 毕尔巴鄂射正，被门将扑出。",
+    "55′ 巴塞罗那获得一次角球。",
+    "59′ 巴塞罗那完成换人。",
+    "64′ 毕尔巴鄂发生一次犯规。",
+    "68′ 巴塞罗那的亚马尔进球，主队再次得分。",
+    "72′ 毕尔巴鄂获得一次角球。",
+    "77′ 毕尔巴鄂进球。",
+    "79′ VAR 判定毕尔巴鄂进球无效，取消该进球。",
+    "83′ 巴塞罗那射正，被门将扑出。",
+    "87′ 毕尔巴鄂完成换人。",
+    "90+3′ 比赛终场，全场结束。",
+  ],
+);
+match3.finalStats = {
+  home: {
+    goals: 3,
+    shots: 17,
+    shotsOnTarget: 8,
+    corners: 7,
+    fouls: 8,
+    yellowCards: 1,
+    redCards: 0,
+    passes: 625,
+    successfulPasses: 569,
+    possession: 65,
+  },
+  away: {
+    goals: 0,
+    shots: 8,
+    shotsOnTarget: 3,
+    corners: 3,
+    fouls: 13,
+    yellowCards: 2,
+    redCards: 0,
+    passes: 336,
+    successfulPasses: 275,
+    possession: 35,
+  },
+};
+match3.version = versionMatch(match3);
+
+export const demoMatches: Match[] = [match1, match2, match3];
