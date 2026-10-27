@@ -14,10 +14,14 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
       - run: npm ci
       - run: npm test
+      - run: npm run typecheck
       - run: npm run build
-      - run: npm ci --prefix api
-      - run: npm run build --prefix api
+        env:
+          # A public dummy key verifies that build-time server env stays out of assets.
+          DEEPSEEK_API_KEY: build-time-leak-sentinel-not-a-real-key
+      - run: npm run package:appservice
+      - run: npm run test:production
