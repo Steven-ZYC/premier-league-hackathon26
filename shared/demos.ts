@@ -49,13 +49,17 @@ function demo(
   const match: Match = {
     id,
     title,
+    englishTitle: `${home.englishName || home.name} vs ${away.englishName || away.name}`,
     competition,
+    englishCompetition: competition === "英超" ? "Premier League" : "La Liga",
     date,
     home,
     away,
     events,
     coverage: "complete",
     source: "PitchPulse 产品演示 · 所有赛况均为虚构，不对应真实比赛",
+    englishSource:
+      "PitchPulse product demo · All events are fictional and do not represent a real fixture",
     rawInput,
     demo: true,
     version: "",
@@ -67,7 +71,7 @@ function demo(
 
 const match1 = demo(
   "demo-01",
-  "演示比赛 01",
+  "曼联 vs 热刺",
   "英超",
   "2026-10-18",
   united,
@@ -165,7 +169,7 @@ match1.version = versionMatch(match1);
 
 const match2 = demo(
   "demo-02",
-  "演示比赛 02",
+  "切尔西 vs 热刺",
   "英超",
   "2026-10-11",
   chelsea,
@@ -228,7 +232,7 @@ match2.version = versionMatch(match2);
 
 const match3 = demo(
   "demo-03",
-  "演示比赛 03",
+  "巴塞罗那 vs 毕尔巴鄂",
   "西甲",
   "2026-10-04",
   barca,

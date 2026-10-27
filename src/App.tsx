@@ -43,6 +43,7 @@ import type {
   Side,
 } from "../shared/types";
 import { demoMatches } from "../shared/demos";
+import { matchMatchesQuery } from "../shared/names";
 import {
   currentMinute,
   eventLabels,
@@ -57,7 +58,13 @@ import {
 import { validateMatch } from "../shared/parser";
 import { Badge, Brand, Chart, StatsTable, Tag } from "./ui";
 import ImportPanel from "./Import";
-import { LanguageContext, type Language, useT, loadTraditional } from "./i18n";
+import {
+  LanguageContext,
+  type Language,
+  useT,
+  loadTraditional,
+  useNames,
+} from "./i18n";
 
 type Page = "home" | "pro" | "fan" | "import" | "guide";
 const STORE = "pitchpulse.matches.v1";
@@ -161,21 +168,19 @@ function Home({
   importMatch: () => void;
 }) {
   const t = useT();
+  const names = useNames();
   const [query, setQuery] = useState(""),
     [competition, setCompetition] = useState(""),
     [date, setDate] = useState("");
   const demo = demoMatches[0];
   const visible = matches.filter(
     (m) =>
-      (
-        m.home.name +
-        m.away.name +
-        m.title +
-        (m.home.englishName || "") +
-        (m.away.englishName || "")
-      )
-        .toLowerCase()
-        .includes(query.toLowerCase()) &&
+      matchMatchesQuery(m, query, [
+        names.team(m.home),
+        names.team(m.away),
+        names.match(m),
+        names.competition(m),
+      ]) &&
       (!competition || m.competition === competition) &&
       (!date || m.date === date),
   );
@@ -273,7 +278,7 @@ function Home({
                 <div key={side}>
                   <Badge team={demo[side]} size={30} />
                   <span>
-                    {demo[side].name}
+                    {names.team(demo[side])}
                     <b className={side === "home" ? "up" : "down"}>
                       {momentum(
                         demo,
@@ -382,7 +387,9 @@ function Home({
             >
               <option value="">{t("全部赛事", "All leagues")}</option>
               {[...new Set(matches.map((m) => m.competition))].map((c) => (
-                <option key={c}>{c}</option>
+                <option key={c} value={c}>
+                  {names.competition(matches.find((m) => m.competition === c)!)}
+                </option>
               ))}
             </select>
             <select
@@ -414,10 +421,10 @@ function Home({
                     <span className="match-index">
                       {String(index + 1).padStart(2, "0")}
                     </span>
-                    <strong>{m.title}</strong>
+                    <strong>{names.match(m)}</strong>
                   </div>
                   <small>
-                    {m.competition}
+                    {names.competition(m)}
                     <span>·</span>
                     {m.date}
                   </small>
@@ -432,8 +439,8 @@ function Home({
                   <div className="row-team">
                     <Badge team={m.home} size={47} />
                     <span>
-                      {m.home.name}
-                      <small>{m.home.englishName}</small>
+                      {names.team(m.home)}
+                      <small>{names.secondary(m.home)}</small>
                     </span>
                   </div>
                   <div className="row-score">
@@ -449,8 +456,8 @@ function Home({
                   <div className="row-team away">
                     <Badge team={m.away} size={47} />
                     <span>
-                      {m.away.name}
-                      <small>{m.away.englishName}</small>
+                      {names.team(m.away)}
+                      <small>{names.secondary(m.away)}</small>
                     </span>
                   </div>
                 </div>
@@ -726,6 +733,7 @@ function PredictionCard({
   seek: (n: number) => void;
 }) {
   const t = useT();
+  const names = useNames();
   const memoryKey = `${match.id}:${match.version}`;
   const saved = predictionMemory.get(memoryKey);
   const [team, setTeam] = useState<Side>(saved?.team ?? "home"),
@@ -782,7 +790,7 @@ function PredictionCard({
       setLoading(false);
     }
   };
-  const names: Record<Direction, string> = {
+  const directionNames: Record<Direction, string> = {
     up: t("看涨", "Rising"),
     down: t("看跌", "Falling"),
     flat: t("预计持平", "Steady"),
@@ -821,7 +829,7 @@ function PredictionCard({
               setForecast(null);
             }}
           >
-            {match[s].name}
+            {names.team(match[s])}
           </button>
         ))}
       </div>
@@ -836,7 +844,7 @@ function PredictionCard({
                   : ""
             }
           >
-            {names[forecast.direction]}
+            {directionNames[forecast.direction]}
             {forecast.direction === "up" ? (
               <ArrowUpRight />
             ) : forecast.direction === "down" ? (
@@ -852,7 +860,7 @@ function PredictionCard({
           {revealed ? (
             <div className="prediction-result">
               <Check size={16} />
-              {t("实际结果", "ACTUAL")}: {names[actualDirection]} ·{" "}
+              {t("实际结果", "ACTUAL")}: {directionNames[actualDirection]} ·{" "}
               {actual > 0 ? "+" : ""}
               {actual.toFixed(1)} {t("点", "pts")}
             </div>
@@ -944,6 +952,7 @@ function FanEvent({
   latest: boolean;
 }) {
   const t = useT();
+  const names = useNames();
   const [expanded, setExpanded] = useState(false),
     [login, setLogin] = useState(false),
     [ai, setAi] = useState<{
@@ -997,7 +1006,7 @@ function FanEvent({
           <span>
             {event.team === "unknown"
               ? t("比赛事件", "MATCH EVENT")
-              : match[event.team].name}
+              : names.team(match[event.team])}
           </span>
           <Tag tone={ai ? "purple" : "muted"}>
             {ai
@@ -1077,6 +1086,7 @@ function MatchView({
   edit: () => void;
 }) {
   const t = useT();
+  const names = useNames();
   const [hover, setHover] = useState<number | null>(null),
     [all, setAll] = useState(false),
     [perspective, setPerspective] = useState<Perspective>("home"),
@@ -1103,7 +1113,7 @@ function MatchView({
       <div className="breadcrumb">
         <span>{t("比赛大厅", "Match library")}</span>
         <ChevronRight size={13} />
-        <span>{match.title}</span>
+        <span>{names.match(match)}</span>
         <ChevronRight size={13} />
         <b>
           {mode === "pro" ? t("专业版", "Pro mode") : t("球迷版", "Fan mode")}
@@ -1131,8 +1141,8 @@ function MatchView({
       <section className="scoreboard">
         <div className="score-team">
           <div>
-            <h2>{match.home.name}</h2>
-            <small>{match.home.englishName}</small>
+            <h2>{names.team(match.home)}</h2>
+            <small>{names.secondary(match.home)}</small>
           </div>
           <Badge team={match.home} size={72} />
         </div>
@@ -1153,14 +1163,14 @@ function MatchView({
               : `${current?.displayTime || "0"}′ · ${current?.period === 2 ? t("下半场", "2ND HALF") : t("上半场", "1ST HALF")}`}
           </p>
           <small>
-            {match.competition} · {match.date}
+            {names.competition(match)} · {match.date}
           </small>
         </div>
         <div className="score-team away">
           <Badge team={match.away} size={72} />
           <div>
-            <h2>{match.away.name}</h2>
-            <small>{match.away.englishName}</small>
+            <h2>{names.team(match.away)}</h2>
+            <small>{names.secondary(match.away)}</small>
           </div>
         </div>
       </section>
@@ -1317,7 +1327,7 @@ function MatchView({
                   )}{" "}
                   {p === "neutral"
                     ? t("中立解说", "Neutral")
-                    : `${match[p].name}${t("球迷", " fan")}`}
+                    : `${names.team(match[p])}${t("球迷", " fan")}`}
                 </button>
               ))}
             </div>
@@ -1422,7 +1432,7 @@ function MatchView({
                           <small>
                             {p === "neutral"
                               ? t("中立", "Neutral")
-                              : match[p].name}
+                              : names.team(match[p])}
                           </small>
                           <p>{t(c.title, englishEventTitle(current, p))}</p>
                         </div>
@@ -1496,7 +1506,7 @@ function MatchView({
           : match.coverage === "excerpt"
             ? t("赛况节选", "Excerpt")
             : t("未知", "Unknown")}{" "}
-        · {match.source || t("个人导入", "Personal import")}
+        · {names.source(match) || t("个人导入", "Personal import")}
       </div>
     </div>
   );
@@ -1757,6 +1767,7 @@ function Application({
             </label>
             <button
               className="btn primary"
+              aria-label={t("导入比赛", "Import match")}
               onClick={() => {
                 setEditing(undefined);
                 nav("import");

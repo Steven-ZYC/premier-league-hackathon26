@@ -8,7 +8,7 @@ import {
   eventWeights,
   statsAt,
 } from "../shared/engine";
-import { useT } from "./i18n";
+import { useT, useNames } from "./i18n";
 
 export function Brand() {
   const t = useT();
@@ -35,6 +35,8 @@ const crestMap: Record<string, string> = {
   "Athletic Club": "77",
 };
 export function Badge({ team, size = 40 }: { team: Team; size?: number }) {
+  const names = useNames();
+  const t = useT();
   const [broken, setBroken] = useState(false);
   const id = crestMap[team.name];
   const src = id ? `/crests/${id}.png` : team.badge;
@@ -53,7 +55,7 @@ export function Badge({ team, size = 40 }: { team: Team; size?: number }) {
       {src && !broken ? (
         <img
           src={src}
-          alt={`${team.name} crest`}
+          alt={t(`${names.team(team)} 队徽`, `${names.team(team)} crest`)}
           onError={() => setBroken(true)}
         />
       ) : (
@@ -88,6 +90,7 @@ export function Chart({
   onHover?: (v: number | null) => void;
   onSeek?: (i: number) => void;
 }) {
+  const names = useNames();
   const t = useT(),
     id = useId().replaceAll(":", ""),
     [tip, setTip] = useState(false);
@@ -158,8 +161,8 @@ export function Chart({
           <div className="team-label">
             <Badge team={team} size={47} />
             <div>
-              <h2>{team.name}</h2>
-              <small>{team.englishName || team.short}</small>
+              <h2>{names.team(team)}</h2>
+              <small>{names.secondary(team)}</small>
             </div>
           </div>
           <div className="momentum-number">
@@ -188,7 +191,7 @@ export function Chart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         role={mini ? "img" : "slider"}
-        aria-label={`${team.name} ${t("势头曲线，方向键切换事件", "momentum chart. Arrow keys seek events")}`}
+        aria-label={`${names.team(team)} ${t("势头曲线，方向键切换事件", "momentum chart. Arrow keys seek events")}`}
         aria-valuemin={-1}
         aria-valuemax={match.events.length - 1}
         aria-valuenow={cursor}
@@ -427,13 +430,14 @@ export function StatsTable({
   compact?: boolean;
 }) {
   const t = useT();
+  const names = useNames();
   const data = statsAt(match, cursor);
   return (
     <div className="stats-table">
       <div className="stats-teams">
         <span>
           <Badge team={match.home} size={27} />
-          {match.home.name}
+          {names.team(match.home)}
         </span>
         <small>
           {t(
@@ -448,7 +452,7 @@ export function StatsTable({
           )}
         </small>
         <span>
-          {match.away.name}
+          {names.team(match.away)}
           <Badge team={match.away} size={27} />
         </span>
       </div>

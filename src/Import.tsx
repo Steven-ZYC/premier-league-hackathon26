@@ -77,10 +77,17 @@ function extraData(match?: Match) {
     2,
   );
 }
-function newTeam(name: string, color: string, existing?: Team): Team {
-  return existing?.name === name
-    ? existing
-    : { name, short: name.replace(/\s/g, "").slice(0, 3), color };
+function newTeam(
+  name: string,
+  englishName: string,
+  color: string,
+  existing?: Team,
+): Team {
+  const team =
+    existing?.name === name
+      ? existing
+      : { name, short: name.replace(/\s/g, "").slice(0, 3), color };
+  return { ...team, englishName: englishName.trim() || undefined };
 }
 export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
   const t = useT(),
@@ -93,6 +100,18 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
   const [date, setDate] = useState(initialMatch?.date || today());
   const [home, setHome] = useState(initialMatch?.home.name || "");
   const [away, setAway] = useState(initialMatch?.away.name || "");
+  const [englishHome, setEnglishHome] = useState(
+    initialMatch?.home.englishName || "",
+  );
+  const [englishAway, setEnglishAway] = useState(
+    initialMatch?.away.englishName || "",
+  );
+  const [englishTitle, setEnglishTitle] = useState(
+    initialMatch?.englishTitle || "",
+  );
+  const [englishCompetition, setEnglishCompetition] = useState(
+    initialMatch?.englishCompetition || "",
+  );
   const [source, setSource] = useState(initialMatch?.source || "");
   const [coverage, setCoverage] = useState<Match["coverage"]>(
     initialMatch?.coverage || "excerpt",
@@ -185,8 +204,8 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
             ),
           );
         parsed = validateMatch({
-          home: newTeam(home, "#e64e56"),
-          away: newTeam(away, "#9eaaff"),
+          home: newTeam(home, englishHome, "#e64e56"),
+          away: newTeam(away, englishAway, "#9eaaff"),
           date,
           events: data.events,
         }).events;
@@ -258,6 +277,10 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
         setDate(match.date);
         setHome(match.home.name);
         setAway(match.away.name);
+        setEnglishHome(match.home.englishName || "");
+        setEnglishAway(match.away.englishName || "");
+        setEnglishTitle(match.englishTitle || "");
+        setEnglishCompetition(match.englishCompetition || "");
         setSource(match.source);
         setCoverage(match.coverage);
         setRaw(match.rawInput);
@@ -349,15 +372,22 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
         })),
       );
       const match = validateMatch({
-        id: initialMatch?.id || crypto.randomUUID(),
+        id:
+          initialMatch && !initialMatch.demo
+            ? initialMatch.id
+            : crypto.randomUUID(),
         title: title.trim() || `${home.trim()} vs ${away.trim()}`,
+        englishTitle: englishTitle.trim() || undefined,
         competition:
           competition.trim() || t("自定义赛事", "Custom competition"),
+        englishCompetition: englishCompetition.trim() || undefined,
         date,
-        home: newTeam(home.trim(), "#e64e56", base?.home),
-        away: newTeam(away.trim(), "#a5afff", base?.away),
+        home: newTeam(home.trim(), englishHome, "#e64e56", base?.home),
+        away: newTeam(away.trim(), englishAway, "#a5afff", base?.away),
         coverage,
         source: source.trim() || t("个人导入", "Personal import"),
+        englishSource:
+          source.trim() === base?.source ? base.englishSource : undefined,
         rawInput: raw,
         events: normalized,
         ...extra,
@@ -511,6 +541,56 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
             </select>
           </label>
         </div>
+        <details className="import-translations">
+          <summary>
+            {t("英文名称（可选）", "English names (optional)")}
+            <ChevronDown size={16} />
+          </summary>
+          <p className="subtle">
+            {t(
+              "切换英文界面时显示；留空则保留原名称，不影响赛况解析。",
+              "Shown in the English interface. Leave blank to keep the original name; event parsing is unchanged.",
+            )}
+          </p>
+          <div className="form-grid">
+            <label>
+              {t("主队名称（英文）", "Home team (English)")}
+              <input
+                value={englishHome}
+                maxLength={80}
+                onChange={(e) => setEnglishHome(e.target.value)}
+                placeholder="e.g. Manchester United"
+              />
+            </label>
+            <label>
+              {t("客队名称（英文）", "Away team (English)")}
+              <input
+                value={englishAway}
+                maxLength={80}
+                onChange={(e) => setEnglishAway(e.target.value)}
+                placeholder="e.g. Tottenham Hotspur"
+              />
+            </label>
+            <label>
+              {t("比赛名称（英文）", "Match title (English)")}
+              <input
+                value={englishTitle}
+                maxLength={100}
+                onChange={(e) => setEnglishTitle(e.target.value)}
+                placeholder="e.g. Manchester United vs Tottenham Hotspur"
+              />
+            </label>
+            <label>
+              {t("赛事名称（英文）", "Competition (English)")}
+              <input
+                value={englishCompetition}
+                maxLength={100}
+                onChange={(e) => setEnglishCompetition(e.target.value)}
+                placeholder="e.g. Premier League"
+              />
+            </label>
+          </div>
+        </details>
       </section>
       <section className="panel import-input">
         <div className="import-input-grid">
@@ -527,6 +607,11 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
                   setHome(home || "曼联");
                   setAway(away || "热刺");
                   setTitle(title || t("我的演示比赛", "My demo match"));
+                  if (!home && !englishHome)
+                    setEnglishHome("Manchester United");
+                  if (!away && !englishAway)
+                    setEnglishAway("Tottenham Hotspur");
+                  if (!title && !englishTitle) setEnglishTitle("My demo match");
                   setSource(t("虚构格式示例", "Fictional format example"));
                   setCoverage("excerpt");
                   setNeedsReparse(true);
@@ -787,10 +872,16 @@ export default function ImportPanel({ onSave, onCancel, initialMatch }: Props) {
                         }
                       >
                         <option value="home">
-                          {home || t("主队", "Home")}
+                          {t(
+                            home || "主队",
+                            englishHome.trim() || home || "Home",
+                          )}
                         </option>
                         <option value="away">
-                          {away || t("客队", "Away")}
+                          {t(
+                            away || "客队",
+                            englishAway.trim() || away || "Away",
+                          )}
                         </option>
                         <option value="unknown">
                           {t("待核对 / 无球队", "Unclear / no team")}

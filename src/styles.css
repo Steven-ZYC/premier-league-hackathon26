@@ -24,7 +24,7 @@
 }
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
   background:
     radial-gradient(ellipse at 80% -10%, #13243866, transparent 40%), var(--bg);
 }
@@ -3656,5 +3656,104 @@ input[type="date"] {
     scroll-behavior: auto !important;
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Translated names retain their full spelling at every viewport width. */
+.match-meta > div:first-child,
+.row-team,
+.row-team > span:not(.badge),
+.team-label,
+.team-label > div,
+.score-team > div {
+  min-width: 0;
+}
+.match-meta strong,
+.row-team > span:not(.badge),
+.score-team h2 {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.45;
+}
+.match-meta strong {
+  flex: 1;
+}
+.match-index {
+  flex-shrink: 0;
+}
+.team-label {
+  flex: 1;
+  padding-right: 10px;
+}
+.team-label h2 {
+  line-height: 1.4;
+}
+.momentum-number {
+  flex-shrink: 0;
+}
+.stats-teams > span {
+  min-width: 0;
+  max-width: 36%;
+  line-height: 1.5;
+}
+.stats-teams > small {
+  max-width: 28%;
+}
+.perspective-tabs > button {
+  white-space: normal;
+  line-height: 1.5;
+}
+html[lang="en"] .team-label h2 {
+  font-size: 17px;
+}
+.import-translations {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
+}
+.import-translations summary {
+  cursor: pointer;
+  color: #b6a0da;
+  font-size: 12px;
+}
+.import-translations > p {
+  color: var(--muted);
+  font-size: 11px;
+  margin: 10px 0 15px;
+}
+@media (max-width: 620px) {
+  html[lang="en"] .row-team,
+  html[lang="en"] .row-team.away {
+    flex-direction: column;
+    text-align: center;
+    gap: 7px;
+  }
+  html[lang="en"] .row-team > span:not(.badge) {
+    font-size: 12px;
+  }
+  html[lang="en"] .row-team small {
+    max-width: none;
+  }
+  html[lang="en"] .score-center {
+    min-width: 120px;
+  }
+  html[lang="en"] .score-team h2 {
+    font-size: 12px;
+  }
+  html[lang="en"] .perspective-tabs > button {
+    flex-direction: column;
+    gap: 5px;
+    font-size: 9px;
+  }
+  html[lang="en"] .team-label h2 {
+    font-size: 16px;
+  }
+  html[lang="en"] .hero h1 {
+    font-size: clamp(28px, 8.5vw, 39px);
+  }
+}
+@media (max-width: 360px) {
+  .header-actions > .btn > span {
+    display: none;
   }
 }

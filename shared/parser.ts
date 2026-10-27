@@ -367,10 +367,18 @@ export function validateMatch(value: unknown): Match {
       typeof value.title === "string"
         ? text(value.title, "比赛名称", 100)
         : "导入比赛",
+    englishTitle:
+      typeof value.englishTitle === "string"
+        ? value.englishTitle.trim().slice(0, 100) || undefined
+        : undefined,
     competition:
       typeof value.competition === "string"
         ? text(value.competition, "赛事", 100)
         : "自定义赛事",
+    englishCompetition:
+      typeof value.englishCompetition === "string"
+        ? value.englishCompetition.trim().slice(0, 100) || undefined
+        : undefined,
     date,
     home: team(value.home, "主队"),
     away: team(value.away, "客队"),
@@ -383,6 +391,10 @@ export function validateMatch(value: unknown): Match {
       typeof value.source === "string"
         ? text(value.source, "来源", 500)
         : "个人导入",
+    englishSource:
+      typeof value.englishSource === "string"
+        ? value.englishSource.trim().slice(0, 500) || undefined
+        : undefined,
     rawInput:
       typeof value.rawInput === "string"
         ? text(value.rawInput, "原始输入", 200000)

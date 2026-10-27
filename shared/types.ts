@@ -1,3 +1,4 @@
+export type Language = "zh-CN" | "zh-TW" | "en";
 export type Side = "home" | "away";
 export type EventType =
   | "goal"
@@ -61,7 +62,9 @@ export interface Match {
   id: string;
   version: string;
   title: string;
+  englishTitle?: string;
   competition: string;
+  englishCompetition?: string;
   date: string;
   home: Team;
   away: Team;
@@ -69,6 +72,7 @@ export interface Match {
   coverage: "complete" | "excerpt" | "unknown";
   missingRanges?: { from: number; to: number }[];
   source: string;
+  englishSource?: string;
   rawInput: string;
   demo: boolean;
   finalStats?: StatsPair;
