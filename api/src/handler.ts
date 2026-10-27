@@ -13,34 +13,14 @@ export interface ApiRequest {
   path: string;
   method: string;
   body?: unknown;
-  principal?: string;
+  // Internal identity selected by the hosting adapter, never from request JSON.
+  userId?: string;
   local?: boolean;
 }
 export interface ApiResponse {
   status: number;
   body: unknown;
   headers?: Record<string, string>;
-}
-
-export function principalUser(encoded: string | undefined): string | undefined {
-  if (!encoded || encoded.length > 12_000) return;
-  try {
-    const principal = JSON.parse(
-      Buffer.from(encoded, "base64").toString("utf8"),
-    ) as Record<string, unknown>;
-    if (
-      typeof principal.userId !== "string" ||
-      !principal.userId ||
-      principal.userId.length > 200 ||
-      !["github", "aad"].includes(String(principal.identityProvider)) ||
-      !Array.isArray(principal.userRoles) ||
-      !principal.userRoles.includes("authenticated")
-    )
-      return;
-    return `${principal.identityProvider}:${principal.userId}`;
-  } catch {
-    return;
-  }
 }
 
 export async function handleApi(
@@ -74,11 +54,11 @@ export async function handleApi(
         headers: { ...headers, Allow: "POST" },
         body: { error: "METHOD_NOT_ALLOWED", message: "请使用 POST 请求。" },
       };
-    // Production values are supplied only by Azure Static Web Apps edge. The
-    // accompanying route configuration requires authenticated for these routes.
+    // Only the server adapter may provide userId. Local bypass is exclusively
+    // used by the loopback-only development server, never the production server.
     const userId = request.local
       ? "local-development"
-      : principalUser(request.principal);
+      : request.userId;
     if (!userId)
       throw new ApiError(
         401,

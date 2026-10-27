@@ -5,29 +5,37 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run build:server",
     "preview": "vite preview --host 127.0.0.1",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
     "dev:full": "tsx scripts/dev-server.ts",
-    "format": "prettier --write src shared api/src scripts tests *.json *.ts *.html README.md .github/workflows"
+    "format": "prettier --write server src shared api/src scripts tests *.json *.ts *.html README.md .github/workflows",
+    "typecheck": "tsc --noEmit",
+    "build:server": "esbuild server/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=build/server.cjs",
+    "start": "node --max-old-space-size=256 build/server.cjs",
+    "package:appservice": "node scripts/package-appservice.mjs",
+    "test:production": "node --test tests/production.test.mjs"
   },
   "dependencies": {
+    "express": "^5.3.0",
     "lucide-react": "^0.468.0",
     "opencc-js": "^1.4.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^22.0.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "esbuild": "^0.28.2",
     "prettier": "^3.9.10",
     "tsx": "^4.20.0",
     "typescript": "~5.9.3",
     "vite": "^7.2.0"
   },
   "engines": {
-    "node": ">=22.12.0"
+    "node": "24.x"
   }
 }

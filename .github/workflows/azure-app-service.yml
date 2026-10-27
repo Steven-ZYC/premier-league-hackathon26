@@ -1,0 +1,90 @@
+name: Deploy Azure App Service F1
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: azure-app-service-production
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: "24"
+  # App resource name, NOT the default hostname (which includes a random suffix).
+  AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME || 'pl-hackathon-web' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          # A public dummy key verifies that build-time server env stays out of assets.
+          DEEPSEEK_API_KEY: build-time-leak-sentinel-not-a-real-key
+      - run: npm run package:appservice
+      - run: npm run test:production
+      - name: Zip prebuilt production files
+        working-directory: release
+        run: zip -qr ../appservice.zip .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: appservice-package
+          path: appservice.zip
+          retention-days: 3
+
+  deploy:
+    needs: build
+    # No credentials are needed for build/test. Enable after Portal/OIDC setup.
+    if: github.ref == 'refs/heads/main' && vars.AZURE_APP_SERVICE_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: appservice-package
+      - name: Azure login with GitHub OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Verify existing Linux / Node.js 24 / F1 target and no cloud build
+        shell: bash
+        env:
+          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+        run: |
+          test -n "$AZURE_RESOURCE_GROUP"
+          app_id=$(az webapp show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query id -o tsv)
+          plan_id=$(az webapp show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query serverFarmId -o tsv)
+          sku=$(az appservice plan show --ids "$plan_id" --query sku.name -o tsv)
+          test "$sku" = F1 || { echo 'Refusing deployment: target plan is not F1.'; exit 1; }
+          runtime=$(az webapp config show --ids "$app_id" --query linuxFxVersion -o tsv)
+          test "$runtime" = 'NODE|24-lts' || { echo 'Set the existing app to Linux Node.js 24 LTS in Portal.'; exit 1; }
+          settings=$(az webapp config appsettings list --ids "$app_id" --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD'].{name:name,value:value}" -o json)
+          SETTINGS="$settings" python - <<'PY'
+          import json, os
+          values = {item['name']: item['value'].lower() for item in json.loads(os.environ['SETTINGS'])}
+          assert all(values.get(name) == 'false' for name in ('SCM_DO_BUILD_DURING_DEPLOYMENT', 'ENABLE_ORYX_BUILD')), 'Disable cloud builds in App Service Environment variables first.'
+          PY
+      - name: Deploy only to the existing Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: appservice.zip

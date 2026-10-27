@@ -7,3 +7,6 @@ api/local.settings.json
 api/dist/
 *.tsbuildinfo
 work/
+build/
+release/
+appservice.zip

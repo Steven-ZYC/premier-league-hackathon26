@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import type { Match } from "../shared/types";
 import { normalizeEvents } from "../shared/engine";
 import { buildPrefixContext } from "../api/src/context";
-import { handleApi, principalUser } from "../api/src/handler";
+import { handleApi } from "../api/src/handler";
 import { clearServiceState, hash, throttle } from "../api/src/service";
 
 function fixture(): Match {
@@ -76,13 +76,7 @@ function fixture(): Match {
     duration: 90,
   };
 }
-const principal = Buffer.from(
-  JSON.stringify({
-    userId: "tester",
-    identityProvider: "github",
-    userRoles: ["authenticated"],
-  }),
-).toString("base64");
+const userId = "github:tester";
 const modelResponse = (value: unknown) =>
   new Response(
     JSON.stringify({
@@ -120,20 +114,6 @@ test("health is public and does not expose key", async () => {
   assert.ok(!JSON.stringify(response.body).includes("secret"));
 });
 test("AI requests require authenticated trusted-platform identity", async () => {
-  assert.equal(principalUser("bad"), undefined);
-  assert.equal(
-    principalUser(
-      Buffer.from(
-        JSON.stringify({
-          userId: "fake",
-          identityProvider: "github",
-          userRoles: ["anonymous"],
-        }),
-      ).toString("base64"),
-    ),
-    undefined,
-  );
-  assert.equal(principalUser(principal), "github:tester");
   const response = await handleApi(
     {
       path: "/api/predict",
@@ -150,7 +130,7 @@ test("missing key returns explicit unavailable, never a pretend prediction", asy
     {
       path: "/api/predict",
       method: "POST",
-      principal,
+      userId,
       body: { match: fixture(), cursor: 1, team: "home" },
     },
     {},
@@ -175,7 +155,7 @@ test("prediction sends prefix, caches immutable result, invalidates when future 
     request = {
       path: "/api/predict",
       method: "POST",
-      principal,
+      userId,
       body: { match, cursor: 1, team: "home" },
     };
   const first = await handleApi(
@@ -211,7 +191,7 @@ test("commentary rejects future events and only forwards through selected event"
     {
       path: "/api/commentary",
       method: "POST",
-      principal,
+      userId,
       body: { match, cursor: 1, eventId: "c", perspective: "home" },
     },
     { DEEPSEEK_API_KEY: "test" },
@@ -226,7 +206,7 @@ test("commentary rejects future events and only forwards through selected event"
     {
       path: "/api/commentary",
       method: "POST",
-      principal,
+      userId,
       body: { match, cursor: 3, eventId: "a", perspective: "home" },
     },
     { DEEPSEEK_API_KEY: "test" },
@@ -244,7 +224,7 @@ test("invalid model schema is rejected without caching", async () => {
     {
       path: "/api/predict",
       method: "POST",
-      principal,
+      userId,
       body: { match: fixture(), cursor: 1, team: "home" },
     },
     { DEEPSEEK_API_KEY: "test" },
@@ -259,7 +239,7 @@ test("cursor validation, methods, JSON schema and per-user throttling", async ()
     {
       path: "/api/predict",
       method: "POST",
-      principal,
+      userId,
       body: { match: fixture(), cursor: 999, team: "home" },
     },
     {},
@@ -268,7 +248,7 @@ test("cursor validation, methods, JSON schema and per-user throttling", async ()
   const method = await handleApi({ path: "/api/predict", method: "GET" }, {});
   assert.equal(method.status, 405);
   const malformed = await handleApi(
-    { path: "/api/parse", method: "POST", principal, body: [] },
+    { path: "/api/parse", method: "POST", userId, body: [] },
     {},
   );
   assert.equal(malformed.status, 400);

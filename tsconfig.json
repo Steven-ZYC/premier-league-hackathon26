@@ -12,5 +12,13 @@
     "noEmit": true,
     "types": ["vite/client", "node"]
   },
-  "include": ["src", "shared", "vite.config.ts", "scripts", "tests"]
+  "include": [
+    "src",
+    "shared",
+    "vite.config.ts",
+    "scripts",
+    "tests",
+    "server",
+    "api/src"
+  ]
 }
