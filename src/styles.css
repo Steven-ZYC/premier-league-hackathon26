@@ -16,6 +16,9 @@
   --red: #ff5269;
   --accent: #9465f5;
 }
+.flat {
+  color: #8895ab;
+}
 * {
   box-sizing: border-box;
 }

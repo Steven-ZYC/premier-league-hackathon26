@@ -130,7 +130,7 @@ export function Chart({
     .filter((p) => p.value !== null)
     .reduce<(typeof series)[number] | undefined>(
       (a, p) =>
-        !a || Math.abs(p.minute - inspected) < Math.abs(a.minute - inspected)
+        !a || Math.abs(p.minute - inspected) <= Math.abs(a.minute - inspected)
           ? p
           : a,
       undefined,
@@ -166,8 +166,14 @@ export function Chart({
             <small>{t("当前势头", "MOMENTUM")}</small>
             <div>
               <b>{value.toFixed(1)}</b>
-              <span className={delta >= 0 ? "up" : "down"}>
-                {delta >= 0 ? (
+              <span
+                className={
+                  Math.abs(delta) < 0.05 ? "flat" : delta > 0 ? "up" : "down"
+                }
+              >
+                {Math.abs(delta) < 0.05 ? (
+                  <Minus size={16} />
+                ) : delta > 0 ? (
                   <ArrowUpRight size={16} />
                 ) : (
                   <ArrowDownRight size={16} />

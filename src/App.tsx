@@ -708,6 +708,12 @@ function Playback({
     </div>
   );
 }
+type LockedPrediction = Prediction & { target: number; baseline: number };
+// Keep an already generated forecast fixed when switching between replay modes.
+const predictionMemory = new Map<
+  string,
+  { team: Side; forecast: LockedPrediction | null }
+>();
 function PredictionCard({
   match,
   cursor,
@@ -720,20 +726,23 @@ function PredictionCard({
   seek: (n: number) => void;
 }) {
   const t = useT();
-  const [team, setTeam] = useState<Side>("home"),
+  const memoryKey = `${match.id}:${match.version}`;
+  const saved = predictionMemory.get(memoryKey);
+  const [team, setTeam] = useState<Side>(saved?.team ?? "home"),
     [loading, setLoading] = useState(false),
     [error, setError] = useState(""),
     [login, setLogin] = useState(false),
-    [forecast, setForecast] = useState<
-      (Prediction & { target: number; baseline: number }) | null
-    >(null);
-  const anchor = useRef({ cursor, version: match.version });
-  anchor.current = { cursor, version: match.version };
+    [forecast, setForecast] = useState<LockedPrediction | null>(
+      saved?.forecast ?? null,
+    );
+  const anchor = useRef({ cursor, version: match.version, team });
+  anchor.current = { cursor, version: match.version, team };
   const next = nextEffectiveIndex(match, cursor);
   useEffect(() => {
-    setForecast(null);
-    setError("");
-  }, [match.id, match.version, team]);
+    if (predictionMemory.size >= 100 && !predictionMemory.has(memoryKey))
+      predictionMemory.delete(predictionMemory.keys().next().value!);
+    predictionMemory.set(memoryKey, { team, forecast });
+  }, [memoryKey, team, forecast]);
   useEffect(() => {
     if (forecast && cursor < forecast.cursor) setForecast(null);
   }, [cursor, forecast]);
@@ -759,7 +768,8 @@ function PredictionCard({
       }
       if (
         anchor.current.cursor === at &&
-        anchor.current.version === match.version
+        anchor.current.version === match.version &&
+        anchor.current.team === team
       )
         setForecast({
           ...data,
@@ -944,6 +954,9 @@ function FanEvent({
     [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const rule = rulesCommentary(match, event, perspective);
+  const requestContext = `${match.version}:${event.id}:${perspective}`;
+  const currentRequestContext = useRef(requestContext);
+  currentRequestContext.current = requestContext;
   useEffect(() => {
     setAi(null);
     setError("");
@@ -968,7 +981,7 @@ function FanEvent({
         setLogin(r.status === 401);
         throw new Error(d.message || t("AI 暂不可用", "AI unavailable"));
       }
-      setAi(d);
+      if (currentRequestContext.current === requestContext) setAi(d);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
