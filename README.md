@@ -2,21 +2,27 @@
 
 <img src="./public/favicon.svg" alt="PitchPulse logo" width="72" />
 
-# ⚽ PitchPulse · 看球牛牛
+<h1>⚽ PitchPulse · 看球牛牛</h1>
 
-### The final score tells you who won. We show you how the match felt.
+<h3>The final score tells you who won. We show you how the match felt.</h3>
 
-**An interactive football replay that turns written match commentary into momentum, key moments, and fan perspectives.**
+<p><strong>An interactive football replay that turns written match commentary into momentum, key moments, and fan perspectives.</strong></p>
 
-**[▶ Try the live demo](https://pl-hackathon-web-bmetckfaa9e4awhg.germanywestcentral-01.azurewebsites.net/)** · **[Explore the features](#the-experience)** · **[Run locally](#run-it-locally)**
+<p>
+  <a href="https://pl-hackathon-web-bmetckfaa9e4awhg.germanywestcentral-01.azurewebsites.net/"><strong>▶ Try the live demo</strong></a> ·
+  <a href="#the-experience">Explore the features</a> ·
+  <a href="#run-it-locally">Run locally</a>
+</p>
 
-[![Deploy Azure App Service](https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/azure-app-service.yml/badge.svg)](https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/azure-app-service.yml)
-[![Validate](https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/ci.yml/badge.svg)](https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/ci.yml)
-![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)
-![Azure](https://img.shields.io/badge/Hosted_on-Microsoft_Azure-0078D4?logo=microsoftazure&logoColor=white)
+<p>
+  <a href="https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/azure-app-service.yml"><img src="https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/azure-app-service.yml/badge.svg" alt="Azure deployment status" /></a>
+  <a href="https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/ci.yml"><img src="https://github.com/Steven-ZYC/premier-league-hackathon26/actions/workflows/ci.yml/badge.svg" alt="Validation status" /></a>
+  <img src="https://img.shields.io/badge/React-19-149ECA?logo=react&amp;logoColor=white" alt="React 19" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&amp;logoColor=white" alt="TypeScript 5" />
+  <img src="https://img.shields.io/badge/Hosted_on-Microsoft_Azure-0078D4?logo=microsoftazure&amp;logoColor=white" alt="Hosted on Microsoft Azure" />
+</p>
 
-<sub>React + TypeScript · Node.js + Express · Microsoft Azure App Service · Optional DeepSeek AI</sub>
+<p><sub>React + TypeScript · Node.js + Express · Microsoft Azure App Service · Optional DeepSeek AI</sub></p>
 
 </div>
 
