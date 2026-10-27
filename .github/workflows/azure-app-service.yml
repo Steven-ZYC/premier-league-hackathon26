@@ -1,4 +1,4 @@
-name: Deploy Azure App Service F1
+name: Deploy Azure App Service
 
 on:
   push:
@@ -48,43 +48,28 @@ jobs:
 
   deploy:
     needs: build
-    # No credentials are needed for build/test. Enable after Portal/OIDC setup.
+    # Pushes to main auto-deploy after the one-time publish-profile secret setup.
     if: github.ref == 'refs/heads/main' && vars.AZURE_APP_SERVICE_ENABLED == 'true'
     runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/download-artifact@v4
         with:
           name: appservice-package
-      - name: Azure login with GitHub OIDC
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - name: Verify existing Linux / Node.js 24 / F1 target and no cloud build
-        shell: bash
+      - name: Check publish profile is configured
         env:
-          AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+          AZURE_WEBAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        shell: bash
         run: |
-          test -n "$AZURE_RESOURCE_GROUP"
-          app_id=$(az webapp show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query id -o tsv)
-          plan_id=$(az webapp show --resource-group "$AZURE_RESOURCE_GROUP" --name "$AZURE_WEBAPP_NAME" --query serverFarmId -o tsv)
-          sku=$(az appservice plan show --ids "$plan_id" --query sku.name -o tsv)
-          test "$sku" = F1 || { echo 'Refusing deployment: target plan is not F1.'; exit 1; }
-          runtime=$(az webapp config show --ids "$app_id" --query linuxFxVersion -o tsv)
-          test "$runtime" = 'NODE|24-lts' || { echo 'Set the existing app to Linux Node.js 24 LTS in Portal.'; exit 1; }
-          settings=$(az webapp config appsettings list --ids "$app_id" --query "[?name=='SCM_DO_BUILD_DURING_DEPLOYMENT' || name=='ENABLE_ORYX_BUILD'].{name:name,value:value}" -o json)
-          SETTINGS="$settings" python - <<'PY'
-          import json, os
-          values = {item['name']: item['value'].lower() for item in json.loads(os.environ['SETTINGS'])}
-          assert all(values.get(name) == 'false' for name in ('SCM_DO_BUILD_DURING_DEPLOYMENT', 'ENABLE_ORYX_BUILD')), 'Disable cloud builds in App Service Environment variables first.'
-          PY
-      - name: Deploy only to the existing Web App
+          if [ -z "$AZURE_WEBAPP_PUBLISH_PROFILE" ]; then
+            echo "::error::Missing AZURE_WEBAPP_PUBLISH_PROFILE. Download the publish profile from the existing Azure Web App and paste its full XML into this GitHub Actions secret."
+            exit 1
+          fi
+      - name: Deploy prebuilt app to existing Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: appservice.zip
