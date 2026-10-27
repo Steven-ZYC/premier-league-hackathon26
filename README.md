@@ -89,36 +89,22 @@ cp .env.example .env
 
 Azure Easy Auth 入口会移除／替换外部请求自行提供的身份头；**应用容器不能另行开放绕过该入口的直连路径**。代码不会自行实现 OAuth 或验证 GitHub access token，也不会信任未经平台验证的 token。没有真实 Azure 入口的本地模拟测试不能证明云端入口配置正确，必须执行文末伪造身份头验收。[微软身份上下文文档](https://learn.microsoft.com/en-us/azure/app-service/configure-authentication-user-identities)、[只读认证变量](https://learn.microsoft.com/en-us/azure/app-service/reference-app-settings#authentication--authorization)、[GitHub 提供者配置](https://learn.microsoft.com/en-us/azure/app-service/configure-authentication-provider-github)。
 
-### 3. GitHub Actions：优先 OIDC
+### 3. GitHub Actions：简化的 Publish Profile 自动部署
 
-保留 `.github/workflows/ci.yml` 的 push / pull request 校验，统一使用 Node 24，并增加生产启动测试。旧部署文件已改名为 `.github/workflows/azure-static-web-apps.yml.disabled`，GitHub 不再加载它；删除旧 `AZURE_SWA_ENABLED` 变量和旧 SWA 部署 token，并在 Actions 页面检查是否还有 Portal 生成的其他 SWA 部署流程，若有一并停用。
+为减少 Azure for Students / 学校 Entra 租户中的 OIDC 与 IAM 配置门槛，本仓库的 `.github/workflows/azure-app-service.yml` **现已采用 App Service Publish Profile**。该方法不需要 Azure Client ID、Tenant ID、Subscription ID、OIDC 联合凭据或给托管标识分配 Reader 权限。
 
-新流程：`.github/workflows/azure-app-service.yml`。
+**一次性配置：**
 
-- **build job**：`npm ci` → 现有与安全测试 → TypeScript → Vite / esbuild 构建 → 生产包 → `npm start` 冒烟测试 → ZIP artifact。
-- **deploy job**：仅 `main` 且 `AZURE_APP_SERVICE_ENABLED=true` 时执行。使用 GitHub `production` Environment 和 OIDC；先只读检查现有目标必须为 F1 / Linux Node 24，并且两个云端构建设置均为 false，否则停止。随后只上传 ZIP，不执行资源创建、扩容或 Azure 端编译。
-- ZIP 只包含 `dist/`、已打包 Express / API / shared 的 `build/server.cjs`、最小 `package.json` 和 `.deployment`。没有运行时 npm 安装、`node_modules`、TypeScript、Vite、Azure Functions host 或秘密文件。Express 及其依赖已编入 CommonJS bundle。
+1. 在现有 Azure Web App `pl-hackathon-web` → Overview 点击 **Download publish profile**。如果按钮不可用，请在 Web App 的 Configuration → General settings 中开启 **SCM Basic Auth Publishing Credentials**，并确认账户具有查看应用发布凭据的权限。Linux 应用可能还需要 App setting `WEBSITE_WEBDEPLOY_USE_SCM=true` 才能下载。
+2. 在 GitHub 仓库 → Settings → Secrets and variables → Actions → **New repository secret**，名称使用 `AZURE_WEBAPP_PUBLISH_PROFILE`，值粘贴下载的 `.PublishSettings` 文件的**完整 XML**。不要上传这个文件到 GitHub 代码、聊天或工单。
+3. 在同一 GitHub 页面的 **Variables** 中配置 `AZURE_APP_SERVICE_ENABLED=true`，可选 `AZURE_WEBAPP_NAME=pl-hackathon-web`。`AZURE_RESOURCE_GROUP`、`AZURE_CLIENT_ID`、`AZURE_TENANT_ID`、`AZURE_SUBSCRIPTION_ID` **不再用于此部署工作流**。
+4. 进入 Actions → **Deploy Azure App Service** → Run workflow，选择 `main`。此后 push / merge 到 `main` 会自动构建并部署。Workflow 中 `build` 和 `deploy` 两个 job 都应为 Success。
 
-一次性 OIDC 配置（需要账户具备相应 Entra / IAM 权限；仓库不会自动创建身份或分配权限）：
+流程保留了测试、TypeScript、esbuild/Vite、生产包启动冒烟检查，然后通过 `azure/webapps-deploy@v3` 上传 ZIP。不会创建新 Azure 资源或自动更改收费计划。
 
-1. GitHub Repository → Settings → Environments，新建 **`production`**，限制部署分支为 `main`；需要时添加人工审批。
-2. 在 Microsoft Entra 中使用现有的部署 App registration / service principal，或由你手动注册一个免费身份。在 Certificates & secrets → Federated credentials → GitHub Actions，组织 `Steven-ZYC`、仓库 `premier-league-hackathon26`，Entity type 选择 **Environment**，Environment 填 **`production`**。
-3. 联合信任必须匹配：issuer `https://token.actions.githubusercontent.com`；subject `repo:Steven-ZYC/premier-league-hackathon26:environment:production`；audience `api://AzureADTokenExchange`。本流程用了 Environment，不能误填分支 subject `...:ref:refs/heads/main`。
-4. Azure IAM 给该身份现有 Web App 范围的 **Website Contributor**，并给现有 App Service Plan 范围的 **Reader**（只读 F1 检查需读取 plan）。不必分配订阅范围 Owner / Contributor。
-5. GitHub → Settings → Secrets and variables → Actions：
+**注意**：Publish Profile 是具有部署权限的长期凭据，安全性弱于 OIDC。请仅存储在 GitHub Secret 中，限制仓库写入权限；如意外泄露立即在 Azure 重置发布凭据。此方法**不再自动检查 F1 SKU**，请在 Azure Portal 核实实际 App Service Plan：如果显示 **B1**，代表 Basic 付费层（可能消耗 Azure for Students 额度），不是 F1，资源名称里包含 `f1` 并不代表 SKU 是 F1。
 
-   | 类型     | 名称                        | 内容                                                                                          |
-   | -------- | --------------------------- | --------------------------------------------------------------------------------------------- |
-   | Secret   | `AZURE_CLIENT_ID`           | OIDC 部署身份 Client ID                                                                       |
-   | Secret   | `AZURE_TENANT_ID`           | 所属 Tenant ID                                                                                |
-   | Secret   | `AZURE_SUBSCRIPTION_ID`     | 现有 Azure for Students Subscription ID                                                       |
-   | Variable | `AZURE_RESOURCE_GROUP`      | 现有 Web App 所属资源组的真实名称                                                             |
-   | Variable | `AZURE_WEBAPP_NAME`         | Azure Overview 中的资源 Name；默认 `pl-hackathon-web`，请核对后填写；**不是带随机后缀的域名** |
-   | Variable | `AZURE_APP_SERVICE_ENABLED` | 完成 Portal 设置后填 `true`                                                                   |
-
-6. 合并代码到 `main` 后进入 Actions → Deploy Azure App Service F1 → Run workflow，或推送 `main` 自动部署。确保只有这一个 App Service 部署流程在运行；不要同时使用 Deployment Center 自动生成的第二个流程。`azure/webapps-deploy` 只部署到现有生产站点，F1 不使用 deployment slot。
-
-如果 Azure for Students 租户不允许配置 OIDC，可由你明确选择 Publish Profile 备选：在现有 Web App 的 Configuration / General settings 开启 **SCM Basic Auth Publishing Credentials**（仅此备选需要），Overview → Download publish profile；将完整 XML 存为 GitHub Secret **`AZURE_WEBAPP_PUBLISH_PROFILE`**。在 deploy job 中移除 `azure/login` 和依赖 Azure CLI 登录的只读预检步骤，手动核对 F1 / Node 24 / 禁用云端构建后，给 `azure/webapps-deploy@v3` 增加 `publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}`。此备选不使用 OIDC 三个 ID，也不需要 `id-token: write`；其余构建和上传步骤保持不变。Profile 含密码，绝不提交 XML、粘贴日志或发送给其他人。默认工作流**只实现 OIDC，不会静默退回密码认证**。[微软 GitHub Actions 部署说明](https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions)。
+参考：[微软 GitHub Actions + Publish Profile 部署指南](https://learn.microsoft.com/en-us/azure/app-service/deploy-github-actions)、[App Service 发布凭据](https://learn.microsoft.com/en-us/azure/app-service/deploy-configure-credentials)。
 
 ### 4. F1 的运行边界
 
